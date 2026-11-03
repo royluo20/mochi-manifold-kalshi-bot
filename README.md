@@ -271,7 +271,3 @@ relies on exact IEEE arithmetic.
 
 Provided as-is, without warranty of any kind. You are responsible for your account, your orders, and for
 following Manifold's and Kalshi's terms of service and API rules. Nothing here is financial advice.
-
-## License
-
-TBD. Add a `LICENSE` file before publishing; without one, nobody else has the right to use the code.
