@@ -1,0 +1,18 @@
+# secrets
+.env
+*.pem
+*.key
+
+# local state and logs
+config_websocket.yaml
+*.bak
+trader.log
+control_bot_state.json
+reap_state.json
+config_archive.yaml
+
+# build output
+cpp/build*/
+__pycache__/
+*.pyc
+.DS_Store

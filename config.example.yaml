@@ -1,0 +1,74 @@
+# Base config for cpp/build/hybrid_bot. Copy to config_websocket.yaml (the file the
+# trader and control_bot.py use by default) and edit:
+#
+#   cp config.example.yaml config_websocket.yaml
+#
+# Every key under bot: is optional; the value shown is a conservative starting point.
+# Keys marked (pair) can also be set on a single market_pairs entry, where they win.
+# Prices and edges are probabilities (0.01 = 1 cent). Sizes are mana.
+
+bot:
+  dry_run: true                 # log decisions, place no orders. Set false to trade.
+
+  # --- when to trade ------------------------------------------------------
+  min_edge_threshold: 0.02      # (pair) edge needed to ADD inventory at low position
+  min_edge_floor: 0.01          # (pair) hard floor under the scaled adding edge
+  max_edge_threshold: 0.10      # (pair) edge needed to add at 100% of max_position
+  edge_scale_start: 0.10        # (pair) position fraction where edge scaling starts
+  clearing_edge_threshold: 0.01 # (pair) edge needed to REDUCE inventory (0 or negative = pay up to shed)
+  max_kalshi_spread: 0.10       # (pair) skip when the Kalshi bid/ask spread is wider than this
+  min_time_between_trades: 0.1  # (pair) seconds between orders on one pair
+  underdog_threshold: 0         # (pair) >0 with underdog_min_edge: buying an outcome priced under
+  underdog_min_edge: 0          # (pair) this needs at least this much edge
+
+  # --- order placement ----------------------------------------------------
+  max_bet_size: 100             # (pair) mana per order at full edge
+  size_edge_power: 0.85         # (pair) order = max_bet * (edge in cents) ** power, capped
+  max_position: 2000            # (pair) max net mana position per market
+  limit_offset: 0.01            # (pair) adding limit sits this far inside the Kalshi touch (0 = at it)
+  min_order_room: 0.001         # skip adding orders whose limit is within this of Manifold's price
+  min_clearing_room: 0.005      # (pair) same, for clearing orders
+  last_cent_max_bet: 0          # >0: follow an inside-the-touch order with a small IOC at the touch
+  own_order_hold_ms: 1000       # treat Manifold as at our limit until our in-flight order resolves
+  enable_amm: false             # (pair) size orders to walk Manifold's CPMM exactly to the limit
+  amm_target_fraction: 1.0      # (pair)
+
+  # --- game-over handling -------------------------------------------------
+  extreme_high: 0.99            # Kalshi at or past this (or 1 - this) = decided game
+  extreme_converge_high: 0.98   # skip the slam if Manifold already got there
+  extreme_bet_multiplier: 10    # (pair) slam size = max_bet_size * this
+  settle_slam: false            # (pair) act on Kalshi's settlement frame
+  tie_resolves: "no"            # (pair) a 0.50 scalar settlement means: no | half | ignore
+
+  # --- price sources ------------------------------------------------------
+  prefer_book: true             # quote from the Kalshi order book (ticker only as fallback)
+  partner_legs: true            # use partner_ticker (the other team's leg) on two-way games
+  partner_trust_ms: 1000        # (pair) live cross: follow the leg that moved last this long
+  partner_max_lead: 0.05        # (pair) cap on how far a followed partner quote may lead ours
+  new_bet_trigger: true         # react to Manifold's new-bet frame (a few ms before the price frame)
+  max_feed_silence_ms: 8000     # a Kalshi socket silent this long stops its markets trading
+  max_staleness_ms: 20000       # max quote age on an actively moving book
+  delta_fresh_ms: 3000
+  delta_move_threshold: 0.02
+
+  # --- inventory refresh --------------------------------------------------
+  position_refresh_batch_size: 50     # pairs re-read per tick (one /positions call each)
+  position_refresh_interval_sec: 60
+
+  # --- Kalshi connection selection (optional, C++ only) -------------------
+  # On start, open N extra Kalshi sockets for ~60 s and keep the fastest. 0 = off.
+  kalshi_probe_candidates: 0    # candidate connections to try at startup
+  kalshi_probe_max_conns: 150   # cap on candidate + live sockets (Kalshi allows 200 per user)
+
+  no_fade_users: []             # Manifold user ids whose fresh moves are never faded
+
+market_pairs: []
+# Pairs are normally written by control_bot.py (/sports, /nba, /connect, ...). By hand:
+#
+# market_pairs:
+#   - name: "Team A at Team B - A"
+#     kalshi_ticker: "KXNBAGAME-26NOV05AAABBB-AAA"   # Kalshi market for the answer
+#     partner_ticker: "KXNBAGAME-26NOV05AAABBB-BBB"  # two-way games: the other team's leg
+#     manifold_slug: "team-a-at-team-b-nov-5"
+#     manifold_answer_id: "abc123XYZ0"               # multi-choice markets only
+#     min_edge_threshold: 0.01                      # any (pair) key above overrides bot:

@@ -1,0 +1,33 @@
+# systemd user unit for the C++ hybrid bot — a drop-in for the Python trader's unit.
+#
+#   cp cpp/deploy/manifold-bot-cpp.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now manifold-bot-cpp
+#
+# control_bot.py env to match (in the control bot's own environment):
+#   CONTROL_SERVICE_UNIT=manifold-bot-cpp.service
+#   CONTROL_PROCESS_PATTERN=cpp/build/hybrid_bot      # default pattern matches the .py trader only
+#   CONTROL_TRADER_LOG=/home/USER/mochi-manifold-kalshi-bot/trader.log
+# Stop the Python trader's unit first: two traders on one config and account
+# would send every order twice.
+[Unit]
+Description=Manifold arbitrage bot (C++ hybrid port)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Same working directory as the Python trader: .env, the config and the
+# relative KALSHI_PRIVATE_KEY_FILE path all resolve from here.
+WorkingDirectory=%h/mochi-manifold-kalshi-bot
+ExecStart=%h/mochi-manifold-kalshi-bot/cpp/build/hybrid_bot config_websocket.yaml
+# /log in control_bot tails this file.
+StandardOutput=append:%h/mochi-manifold-kalshi-bot/trader.log
+StandardError=append:%h/mochi-manifold-kalshi-bot/trader.log
+Restart=always
+RestartSec=3
+# SIGINT gives the same graceful stop as the Python bot: in-flight orders drain (up to 25 s).
+KillSignal=SIGINT
+TimeoutStopSec=40
+
+[Install]
+WantedBy=default.target

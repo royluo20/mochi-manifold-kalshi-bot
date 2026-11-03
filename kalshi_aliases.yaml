@@ -1,0 +1,34 @@
+# Manual overrides for Kalshi <-> Manifold name matching.
+#
+# Read by make_configs.py's `generic` path (generate_generic_configs) before any
+# fuzzy matching. Use this when the matcher misses or reports AMBIGUOUS. Keys are
+# matched on normalized text (lowercased, accents folded, punctuation dropped),
+# so "A. Antonelli", "a antonelli" and "A ANTONELLI" are the same key.
+
+# ---------------------------------------------------------------------------
+# rewrites: Manifold answer text -> the text to match with instead.
+#
+# Prefer these: they are durable. A driver's name is spelled the same way at
+# every race, so one entry fixes every future F1 event.
+# ---------------------------------------------------------------------------
+rewrites:
+  # Manifold sometimes lists the short name, which is ambiguous against Kalshi's
+  # full names ("Kimi" alone scores identically vs Andrea Kimi Antonelli and
+  # Kimi Raikkonen, so the matcher withholds it as AMBIGUOUS).
+  Kimi Antonelli: Andrea Kimi Antonelli
+  # An abbreviated first initial drops token coverage below the 0.8 gate
+  # ("a antonelli" vs "andrea kimi antonelli" = 1/2 tokens).
+  a antonelli: Andrea Kimi Antonelli
+
+# ---------------------------------------------------------------------------
+# pins: Manifold answer text -> an exact Kalshi ticker.
+#
+# Event-specific (the ticker only exists for that one event), so reach for a
+# rewrite first. Useful when two genuinely different outcomes share a name, or
+# when the Kalshi sub-title is too unlike the Manifold text to rewrite.
+# A pin whose ticker is absent from the event being generated is reported and
+# ignored, so stale entries are harmless.
+# ---------------------------------------------------------------------------
+pins: {}
+  # example:
+  # some manifold answer text: KXF1RACE-HUNGP26-ANT
